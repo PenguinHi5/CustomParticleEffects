@@ -49,7 +49,7 @@ public class CustomParticleEffects extends JavaPlugin
         _particleEffects = new HashMap<>();
         _particleEffects.put("line", new LineParticleEffect(this));
         _particleEffects.put("multiline", new MultiLineParticleEffect(this));
-        // WIP - _particleEffects.put("curvedline", new CurvedLineParticleEffect(this));
+        _particleEffects.put("curvedline", new CurvedLineParticleEffect(this));
     }
 
     public void stopParticles()

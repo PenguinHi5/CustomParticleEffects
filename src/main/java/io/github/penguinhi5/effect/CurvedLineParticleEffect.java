@@ -10,9 +10,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-/**
- * TODO !!!!!!! BROKEN CODE --- WIP !!!!!!!
- */
 public class CurvedLineParticleEffect implements ParticleEffect
 {
     private CustomParticleEffects _plugin;
@@ -61,7 +58,6 @@ public class CurvedLineParticleEffect implements ParticleEffect
         double approxDistBetweenParticles = 0.25;
         ArrayList<Location> particleLocations = getParticleLocations(approxDistBetweenParticles);
 
-        // spawn particles
         _taskID = new BukkitRunnable()
         {
             int idx = 0;
@@ -69,10 +65,6 @@ public class CurvedLineParticleEffect implements ParticleEffect
             @Override
             public void run()
             {
-                // update idx
-                if (++idx >= particleLocations.size())
-                    idx = 0;
-
                 // spawn particles
                 double x = particleLocations.get(idx).getX();
                 double y = particleLocations.get(idx).getY();
@@ -80,32 +72,39 @@ public class CurvedLineParticleEffect implements ParticleEffect
                 particleLocations.get(0).getWorld().spawnParticle(Particle.COMPOSTER, x, y, z, 1, 0, 0, 0);
                 particleLocations.get(0).getWorld().spawnParticle(Particle.CRIMSON_SPORE, x, y, z, 1, 0.5, 0.5, 0.5);
                 particleLocations.get(0).getWorld().spawnParticle(Particle.FALLING_OBSIDIAN_TEAR, x, y, z, 1, 0.5, 0.5, 0.5);
+
+                // update idx
+                if (++idx >= particleLocations.size())
+                    idx = 0;
             }
         }.runTaskTimer(_plugin, 0, speed).getTaskId();
     }
 
-    private ArrayList<Location> getParticleLocations(double distBetweenParticles)
+    private ArrayList<Location> getParticleLocations(double approxDistBetweenParticles)
     {
         ArrayList<Location> pointsList = getPoints();
-        double[] distances = new double[_points.size() - 1];
-        double totalDistance  = 0;
+        double[] distances = new double[pointsList.size() - 1];
+        double totalDistance = 0;
 
         // compute length of all line segments
         for (int i = 0; i < distances.length; i++)
         {
-            distances[i] = _points.get(i).distance(_points.get(i + 1));
+            distances[i] = pointsList.get(i).distance(pointsList.get(i + 1));
             totalDistance += distances[i];
         }
 
-        int approxParticleCount = (int)(totalDistance / distBetweenParticles) + 1;
+        // compute particle count
+        int approxParticleCount = (int)(totalDistance / approxDistBetweenParticles) + 1;
         ArrayList<Location> particleLocations = new ArrayList<>();
 
+        // compute locations of all particles
         for (int segment = 0; segment < distances.length; segment++)
         {
-            int particlesInSegment = (int)(approxParticleCount * distances[segment] / distBetweenParticles) + 1;
+            int particlesInSegment = (int)(approxParticleCount * distances[segment] / totalDistance);
             for (int point = 0; point < particlesInSegment; point++)
             {
-                double t = point / particlesInSegment;
+                double t = (double)point / particlesInSegment;
+
                 if (segment < 1)
                 {
                     double x = computeInterpolation(pointsList.get(0).getX(),
@@ -187,17 +186,6 @@ public class CurvedLineParticleEffect implements ParticleEffect
         return particleLocations;
     }
 
-    private double computeInterpolation(double p0, double p1, double p2, double p3, double t)
-    {
-        double deri = 0.5 * (p2 - p0);
-        double derii = 0.5 * (p3 - p1);
-        double ai = p1;
-        double bi = deri;
-        double ci = 3 * (p2 - p1) - 2 * deri - derii;
-        double di = deri + derii + 2 * (-p2 + p1);
-        return ai + bi * t + ci * t * t + di * t * t * t;
-    }
-
     private ArrayList<Location> getPoints()
     {
         if (_points.size() > 3)
@@ -208,8 +196,8 @@ public class CurvedLineParticleEffect implements ParticleEffect
         {
             ArrayList<Location> newPointsList = new ArrayList<>();
             newPointsList.add(_points.get(0));
-            newPointsList.add(_points.get(0));
             newPointsList.add(_points.get(1));
+            newPointsList.add(_points.get(2));
             newPointsList.add(_points.get(2));
             return newPointsList;
         }
@@ -217,12 +205,22 @@ public class CurvedLineParticleEffect implements ParticleEffect
         {
             ArrayList<Location> newPointsList = new ArrayList<>();
             newPointsList.add(_points.get(0));
-            newPointsList.add(_points.get(0));
+            newPointsList.add(_points.get(1));
             newPointsList.add(_points.get(1));
             newPointsList.add(_points.get(1));
             return newPointsList;
         }
-
         return null;
+    }
+
+    private double computeInterpolation(double p0, double p1, double p2, double p3, double t)
+    {
+        double deri = 0.5 * (p2 - p0);
+        double derii = 0.5 * (p3 - p2);
+        double a0 = p1;
+        double a1 = deri;
+        double a2 = 3 * (p2 - p1) - 2 * deri - derii;
+        double a3 = deri + derii + 2 * (-p2 + p1);
+        return a0 + a1 * t + a2 * t * t + a3 * t * t * t;
     }
 }
